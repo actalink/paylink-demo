@@ -138,6 +138,9 @@ export default function CheckoutSession() {
         `${ACTA_BASE_URL}/subscriptionstatus?address=${eoaAddress}&subscriptionId=${details.subscription.id}`,
         {
           method: "GET",
+          headers: {
+            "x-api-key": ACTA_API_KEY,
+          },
         }
       );
       const jsonRes = await res.json();
