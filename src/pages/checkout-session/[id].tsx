@@ -43,6 +43,7 @@ import {
 } from "../../constants";
 import { injected } from "wagmi/connectors";
 import { IoPower } from "react-icons/io5";
+import { ClipLoader } from "react-spinners";
 
 interface IPlan {
   planId: string;
@@ -101,6 +102,7 @@ export default function CheckoutSession() {
   });
   const [isApprovalRequired, setIsApprovalRequired] = useState<boolean>(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   async function getCheckoutSessionData(ssnId: string): Promise<any> {
     const res = await fetch(
@@ -355,11 +357,13 @@ export default function CheckoutSession() {
   };
 
   const handleSubscribe = async () => {
+    setLoading(true);
     if (isApprovalRequired) {
       await approve();
     }
     await createTransaction();
     setSubscriptionStatus(true);
+    setLoading(false);
   };
 
   if (!details)
@@ -454,14 +458,20 @@ export default function CheckoutSession() {
             {details.subscription.receivers[0].address}
           </p>
         </div>
-        <button
-          className="w-full mt-2 py-2 bg-black text-white font-bold rounded-lg"
-          onClick={(e) => {
-            handleSubscribe();
-          }}
-        >
-          {isApprovalRequired ? "Approve" : "Sign"}
-        </button>
+        {loading ? (
+          <button className="w-full mt-2 py-2 bg-black text-white font-bold rounded-lg">
+            <ClipLoader color="#ffffff" />
+          </button>
+        ) : (
+          <button
+            className="w-full mt-2 py-2 bg-black text-white font-bold rounded-lg"
+            onClick={(e) => {
+              handleSubscribe();
+            }}
+          >
+            {isApprovalRequired ? "Approve" : "Sign"}
+          </button>
+        )}
       </div>
     </>
   );

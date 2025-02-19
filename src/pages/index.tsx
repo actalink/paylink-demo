@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import { useAccount, useConnect } from "wagmi";
-import { injected } from 'wagmi/connectors'
+import { injected } from "wagmi/connectors";
+import { ClipLoader } from "react-spinners";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export default function Home() {
-  const {connect} = useConnect();
-  const {address} = useAccount();
-  console.log(address)
+  const { connect } = useConnect();
+  const { address } = useAccount();
+  console.log(address);
   return (
     <div
       className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
@@ -41,7 +42,7 @@ export default function Home() {
           <li>Save and see your changes instantly.</li>
         </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row" >
+        <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
             className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
@@ -113,9 +114,6 @@ export default function Home() {
           />
           Go to nextjs.org →
         </a>
-        <button onClick={(e) => connect({ connector: injected() })}>
-          click
-        </button>
       </footer>
     </div>
   );
