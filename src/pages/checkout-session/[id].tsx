@@ -102,7 +102,9 @@ export default function CheckoutSession() {
   });
   const [isApprovalRequired, setIsApprovalRequired] = useState<boolean>(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState<boolean>(false);
+  const [isDeployed, setIsDeployed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [deploymentLoading, setDeploymentLoading] = useState<boolean>(false);
 
   async function getCheckoutSessionData(ssnId: string): Promise<any> {
     const res = await fetch(
@@ -150,6 +152,30 @@ export default function CheckoutSession() {
       fetchSubscriptionStatus();
     }
   }, [eoaAddress, details]);
+
+  const checkIsDeployed = async () => {
+    const status = await actaAccount?.isDeployed();
+    if (status !== undefined) {
+      setIsDeployed(status);
+    }
+    return status;
+  };
+
+  const deployAccount = async () => {
+    if (actaAccount !== undefined) {
+      setDeploymentLoading(true);
+      const hash = await actaAccount.deployAccount();
+      console.log(`account deployed: ${hash}`);
+      setDeploymentLoading(false);
+      setIsDeployed(true);
+    }
+  };
+
+  useEffect(() => {
+    if (swAddress !== undefined) {
+      checkIsDeployed();
+    }
+  }, [swAddress]);
 
   useEffect(() => {
     const updateNetwork = async () => {
@@ -461,6 +487,24 @@ export default function CheckoutSession() {
             {details.subscription.receivers[0].address}
           </p>
         </div>
+        {!isDeployed && (
+          <div>
+            {deploymentLoading ? (
+              <button className="w-full mt-2 py-2 bg-gray-100 text-black font-bold rounded-lg">
+                <ClipLoader color="#ffffff" />
+              </button>
+            ) : (
+              <button
+                className="w-full mt-2 py-2 bg-gray-100 text-black font-bold rounded-lg"
+                onClick={(e) => {
+                  deployAccount();
+                }}
+              >
+                Deploy Account
+              </button>
+            )}
+          </div>
+        )}
         {loading ? (
           <button className="w-full mt-2 py-2 bg-black text-white font-bold rounded-lg">
             <ClipLoader color="#ffffff" />
