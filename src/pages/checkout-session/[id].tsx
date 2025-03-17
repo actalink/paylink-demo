@@ -21,6 +21,7 @@ import {
   useFees,
   useMerkleSignUserOps,
   useSalt,
+  useNonceKeys,
 } from "@actalink/react-hooks";
 import { config } from "../../wagmi";
 import {
@@ -29,6 +30,7 @@ import {
   encodePacked,
   erc20Abi,
   getAddress,
+  Hex,
   parseUnits,
   PublicClient,
 } from "viem";
@@ -91,6 +93,7 @@ export default function CheckoutSession() {
     eoaAddress: eoaAddress,
     config,
   });
+  const { getPendingNonceKeys } = useNonceKeys();
   const path = usePathname();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [details, setDetails] = useState<any>(null);
@@ -229,30 +232,6 @@ export default function CheckoutSession() {
     checkAllowance();
   }, [plan, swAddress]);
 
-  const getValidatorForNonce = async () => {
-    const res = await fetch(
-      `${PAYMASTER_URL}/api/getPendingNonceKeys?smartWalletAddress=${swAddress}`,
-      {
-        method: "GET",
-      }
-    );
-    let usedValidators: Array<Address> = [];
-    if (res.status === 200) {
-      const jsonRes = await res.json();
-      usedValidators = jsonRes.map((val: Address) => {
-        return getAddress(val);
-      });
-      console.log(usedValidators);
-    }
-    if (usedValidators.length === 0) return validators[0];
-
-    const unusedValidators = validators.filter(
-      (validator) => !usedValidators.includes(validator)
-    );
-    console.log(unusedValidators);
-    return unusedValidators[0];
-  };
-
   const createERC20RecurringPayment = async (
     recipientAddr: Address,
     executionTimes: Array<number>,
@@ -264,15 +243,22 @@ export default function CheckoutSession() {
         return;
       }
       const paymasterAddress = PAYMASTER_ADDRESS as Address;
-      const validator = await getValidatorForNonce();
-      console.log(`validator: ${validator}`);
-      const actaFees = await calculateActaFees(amount, validator);
-      const paymasterFees = await getPaymasterfees(validator);
+      const unusedValidators = await getPendingNonceKeys(
+        PAYMASTER_URL,
+        validators,
+        salt as Hex
+      );
+      if (unusedValidators === undefined || unusedValidators.length === 0) {
+        throw new Error("Subscribe limit exceed");
+      }
+      console.log(unusedValidators);
+      const actaFees = await calculateActaFees(amount, unusedValidators[0]);
+      const paymasterFees = await getPaymasterfees(unusedValidators[0]);
       const { actaFeesRecipient, paymasterFeesRecipient } =
-        await getActaFeesRecipients(validator);
+        await getActaFeesRecipients(unusedValidators[0]);
       const userOps: Array<UserOperation<"0.7">> = [];
       const { factory, factoryData } = await actaAccount.getFactoryArgs();
-      const nonce = await actaAccount.getValidatorNonce(validator);
+      const nonce = await actaAccount.getValidatorNonce(unusedValidators[0]);
       if (swAddress && actaFees !== undefined && nonce) {
         const transferData = await createTransferCallData(
           eoaAddress as Address,
@@ -350,13 +336,20 @@ export default function CheckoutSession() {
 
   const approve = async () => {
     if (plan === null) return;
-    const validator = await getValidatorForNonce();
+    const unusedValidators = await getPendingNonceKeys(
+      PAYMASTER_URL,
+      validators,
+      salt as Hex
+    );
+    if (unusedValidators === undefined || unusedValidators.length === 0) {
+      throw new Error("Subscribe limit exceed");
+    }
     const usdcAmount = parseUnits(
       plan.amount,
       details.subscription.tokens[0].decimals
     );
-    const actaFees = await calculateActaFees(usdcAmount, validator);
-    const paymasterFees = await getPaymasterfees(validator);
+    const actaFees = await calculateActaFees(usdcAmount, unusedValidators[0]);
+    const paymasterFees = await getPaymasterfees(unusedValidators[0]);
     const totalAllowanceRequired =
       (usdcAmount + actaFees + paymasterFees) * BigInt(plan.volume);
     const callData = encodeFunctionData({
