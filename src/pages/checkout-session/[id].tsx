@@ -20,7 +20,6 @@ import {
   useActaAccount,
   useFees,
   useMerkleSignUserOps,
-  useSalt,
   useNonceKeys,
 } from "@actalink/react-hooks";
 import { config } from "../../wagmi";
@@ -84,10 +83,10 @@ export default function CheckoutSession() {
     address: swAddress,
     status: swStatus,
     actaAccount,
+    salt,
   } = useActaAccount({ eoaAddress, eoaStatus, chainId, config, validators });
   const { calculateActaFees, getActaFeesRecipients, getPaymasterfees } =
     useFees({ config });
-  const { getUniqueSalt } = useSalt({ eoaAddress, config });
   const { sendTransactionAsync } = useSendTransaction();
   const { createERC20Transfer } = useMerkleSignUserOps({
     eoaAddress: eoaAddress,
@@ -242,7 +241,6 @@ export default function CheckoutSession() {
       if (actaAccount === undefined) {
         return;
       }
-      const salt = await getUniqueSalt();
       const paymasterAddress = PAYMASTER_ADDRESS as Address;
       const unusedValidators = await getPendingNonceKeys(
         PAYMASTER_URL,
@@ -337,7 +335,6 @@ export default function CheckoutSession() {
 
   const approve = async () => {
     if (plan === null) return;
-    const salt = await getUniqueSalt();
     const unusedValidators = await getPendingNonceKeys(
       PAYMASTER_URL,
       validators,
